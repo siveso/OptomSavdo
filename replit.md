@@ -7,6 +7,8 @@ OptomSavdo is a comprehensive e-commerce platform designed for wholesale and ret
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Language preference: Uzbek/Russian for UI (multi-language support)
+Project focus: AI-powered e-commerce with automated marketing features
 
 ## System Architecture
 
