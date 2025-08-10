@@ -5,6 +5,12 @@ import {
   cartItems,
   reviews,
   testimonials,
+  orders,
+  orderItems,
+  blogPosts,
+  seoSettings,
+  marketingMessages,
+  adminUsers,
   type User,
   type UpsertUser,
   type Category,
@@ -17,6 +23,18 @@ import {
   type InsertReview,
   type Testimonial,
   type InsertTestimonial,
+  type Order,
+  type InsertOrder,
+  type OrderItem,
+  type InsertOrderItem,
+  type BlogPost,
+  type InsertBlogPost,
+  type SeoSettings,
+  type InsertSeoSettings,
+  type MarketingMessage,
+  type InsertMarketingMessage,
+  type AdminUser,
+  type InsertAdminUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, ilike, and } from "drizzle-orm";
@@ -59,6 +77,33 @@ export interface IStorage {
   // Testimonials operations
   getTestimonials(): Promise<Testimonial[]>;
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
+  
+  // Admin operations
+  isAdmin(userId: string): Promise<boolean>;
+  createAdminUser(adminData: InsertAdminUser): Promise<AdminUser>;
+  
+  // Order operations
+  getOrders(filters?: { status?: string; limit?: number; offset?: number }): Promise<(Order & { user: User; items: (OrderItem & { product: Product })[] })[]>;
+  getOrder(id: string): Promise<(Order & { user: User; items: (OrderItem & { product: Product })[] }) | undefined>;
+  createOrder(orderData: InsertOrder, items: InsertOrderItem[]): Promise<Order>;
+  updateOrderStatus(id: string, status: string): Promise<Order>;
+  
+  // Blog operations
+  getBlogPosts(filters?: { published?: boolean; limit?: number; offset?: number }): Promise<BlogPost[]>;
+  getBlogPost(id: string): Promise<BlogPost | undefined>;
+  createBlogPost(postData: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: string, postData: Partial<InsertBlogPost>): Promise<BlogPost>;
+  publishBlogPost(id: string): Promise<BlogPost>;
+  
+  // SEO operations
+  getSeoSettings(): Promise<SeoSettings | undefined>;
+  updateSeoSettings(seoData: InsertSeoSettings): Promise<SeoSettings>;
+  
+  // Marketing operations
+  getMarketingMessages(filters?: { type?: string; status?: string; limit?: number }): Promise<MarketingMessage[]>;
+  createMarketingMessage(messageData: InsertMarketingMessage): Promise<MarketingMessage>;
+  scheduleMarketingMessage(id: string, scheduledAt: Date): Promise<MarketingMessage>;
+  markMessageSent(id: string): Promise<MarketingMessage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -244,6 +289,233 @@ export class DatabaseStorage implements IStorage {
   async createTestimonial(testimonialData: InsertTestimonial): Promise<Testimonial> {
     const [testimonial] = await db.insert(testimonials).values(testimonialData).returning();
     return testimonial;
+  }
+
+  // Admin operations
+  async isAdmin(userId: string): Promise<boolean> {
+    const [adminUser] = await db
+      .select()
+      .from(adminUsers)
+      .where(and(eq(adminUsers.userId, userId), eq(adminUsers.isActive, true)));
+    return !!adminUser;
+  }
+
+  async createAdminUser(adminData: InsertAdminUser): Promise<AdminUser> {
+    const [adminUser] = await db.insert(adminUsers).values(adminData).returning();
+    return adminUser;
+  }
+
+  // Order operations
+  async getOrders(filters: { status?: string; limit?: number; offset?: number } = {}): Promise<any[]> {
+    let query = db
+      .select()
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .orderBy(desc(orders.createdAt));
+
+    if (filters.status) {
+      query = query.where(eq(orders.status, filters.status));
+    }
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    if (filters.offset) {
+      query = query.offset(filters.offset);
+    }
+
+    const ordersData = await query;
+    
+    // Get order items for each order
+    const ordersWithItems = await Promise.all(
+      ordersData.map(async (orderRow) => {
+        const items = await db
+          .select()
+          .from(orderItems)
+          .leftJoin(products, eq(orderItems.productId, products.id))
+          .where(eq(orderItems.orderId, orderRow.orders.id));
+
+        return {
+          ...orderRow.orders,
+          user: orderRow.users!,
+          items: items.map(item => ({
+            ...item.order_items,
+            product: item.products!,
+          })),
+        };
+      })
+    );
+
+    return ordersWithItems;
+  }
+
+  async getOrder(id: string): Promise<any | undefined> {
+    const [orderRow] = await db
+      .select()
+      .from(orders)
+      .leftJoin(users, eq(orders.userId, users.id))
+      .where(eq(orders.id, id));
+
+    if (!orderRow) return undefined;
+
+    const items = await db
+      .select()
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(eq(orderItems.orderId, id));
+
+    return {
+      ...orderRow.orders,
+      user: orderRow.users!,
+      items: items.map(item => ({
+        ...item.order_items,
+        product: item.products!,
+      })),
+    };
+  }
+
+  async createOrder(orderData: InsertOrder, items: InsertOrderItem[]): Promise<Order> {
+    const [order] = await db.insert(orders).values(orderData).returning();
+    
+    // Add order items
+    const orderItemsData = items.map(item => ({
+      ...item,
+      orderId: order.id,
+    }));
+    
+    await db.insert(orderItems).values(orderItemsData);
+    
+    return order;
+  }
+
+  async updateOrderStatus(id: string, status: string): Promise<Order> {
+    const [order] = await db
+      .update(orders)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(orders.id, id))
+      .returning();
+    return order;
+  }
+
+  // Blog operations
+  async getBlogPosts(filters: { published?: boolean; limit?: number; offset?: number } = {}): Promise<BlogPost[]> {
+    let query = db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+
+    if (filters.published !== undefined) {
+      query = query.where(eq(blogPosts.isPublished, filters.published));
+    }
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    if (filters.offset) {
+      query = query.offset(filters.offset);
+    }
+
+    return await query;
+  }
+
+  async getBlogPost(id: string): Promise<BlogPost | undefined> {
+    const [post] = await db.select().from(blogPosts).where(eq(blogPosts.id, id));
+    return post;
+  }
+
+  async createBlogPost(postData: InsertBlogPost): Promise<BlogPost> {
+    const [post] = await db.insert(blogPosts).values(postData).returning();
+    return post;
+  }
+
+  async updateBlogPost(id: string, postData: Partial<InsertBlogPost>): Promise<BlogPost> {
+    const [post] = await db
+      .update(blogPosts)
+      .set({ ...postData, updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    return post;
+  }
+
+  async publishBlogPost(id: string): Promise<BlogPost> {
+    const [post] = await db
+      .update(blogPosts)
+      .set({ isPublished: true, publishedAt: new Date(), updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    return post;
+  }
+
+  // SEO operations
+  async getSeoSettings(): Promise<SeoSettings | undefined> {
+    const [settings] = await db.select().from(seoSettings);
+    return settings;
+  }
+
+  async updateSeoSettings(seoData: InsertSeoSettings): Promise<SeoSettings> {
+    const existing = await this.getSeoSettings();
+    
+    if (existing) {
+      const [settings] = await db
+        .update(seoSettings)
+        .set({ ...seoData, updatedAt: new Date() })
+        .where(eq(seoSettings.id, existing.id))
+        .returning();
+      return settings;
+    } else {
+      const [settings] = await db.insert(seoSettings).values(seoData).returning();
+      return settings;
+    }
+  }
+
+  // Marketing operations
+  async getMarketingMessages(filters: { type?: string; status?: string; limit?: number } = {}): Promise<MarketingMessage[]> {
+    const conditions = [];
+
+    if (filters.type) {
+      conditions.push(eq(marketingMessages.type, filters.type));
+    }
+
+    if (filters.status) {
+      conditions.push(eq(marketingMessages.status, filters.status));
+    }
+
+    let query = db
+      .select()
+      .from(marketingMessages)
+      .orderBy(desc(marketingMessages.createdAt));
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    if (filters.limit) {
+      query = query.limit(filters.limit);
+    }
+
+    return await query;
+  }
+
+  async createMarketingMessage(messageData: InsertMarketingMessage): Promise<MarketingMessage> {
+    const [message] = await db.insert(marketingMessages).values(messageData).returning();
+    return message;
+  }
+
+  async scheduleMarketingMessage(id: string, scheduledAt: Date): Promise<MarketingMessage> {
+    const [message] = await db
+      .update(marketingMessages)
+      .set({ scheduledAt, status: "scheduled" })
+      .where(eq(marketingMessages.id, id))
+      .returning();
+    return message;
+  }
+
+  async markMessageSent(id: string): Promise<MarketingMessage> {
+    const [message] = await db
+      .update(marketingMessages)
+      .set({ sentAt: new Date(), status: "sent" })
+      .where(eq(marketingMessages.id, id))
+      .returning();
+    return message;
   }
 }
 

@@ -154,7 +154,7 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
-// Types
+// Types (existing tables)
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
@@ -193,3 +193,152 @@ export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
 });
 export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 export type Testimonial = typeof testimonials.$inferSelect;
+
+// TODO: Admin panel types will be added after table definitions
+
+// Admin panel tables
+export const orders = pgTable("orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 50 }).default("pending"), // pending, confirmed, shipped, delivered, cancelled
+  paymentStatus: varchar("payment_status", { length: 50 }).default("pending"), // pending, paid, failed
+  shippingAddress: text("shipping_address"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const orderItems = pgTable("order_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").notNull(),
+  productId: varchar("product_id").notNull(),
+  quantity: integer("quantity").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  isWholesale: boolean("is_wholesale").default(false),
+});
+
+export const blogPosts = pgTable("blog_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title", { length: 500 }).notNull(),
+  titleUz: varchar("title_uz", { length: 500 }).notNull(),
+  titleRu: varchar("title_ru", { length: 500 }).notNull(),
+  titleEn: varchar("title_en", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  contentUz: text("content_uz").notNull(),
+  contentRu: text("content_ru").notNull(),
+  contentEn: text("content_en").notNull(),
+  slug: varchar("slug", { length: 500 }).notNull().unique(),
+  tags: text("tags").array(),
+  isPublished: boolean("is_published").default(false),
+  publishedAt: timestamp("published_at"),
+  featuredImage: varchar("featured_image"),
+  metaDescription: text("meta_description"),
+  generatedByAI: boolean("generated_by_ai").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const seoSettings = pgTable("seo_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  googleAnalyticsId: varchar("google_analytics_id"),
+  metaPixelId: varchar("meta_pixel_id"),
+  customHeadCode: text("custom_head_code"),
+  siteName: varchar("site_name"),
+  siteDescription: text("site_description"),
+  siteKeywords: text("site_keywords"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const marketingMessages = pgTable("marketing_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type", { length: 50 }).notNull(), // telegram, email, sms
+  title: varchar("title", { length: 500 }),
+  content: text("content").notNull(),
+  targetAudience: varchar("target_audience", { length: 100 }),
+  scheduledAt: timestamp("scheduled_at"),
+  sentAt: timestamp("sent_at"),
+  status: varchar("status", { length: 50 }).default("draft"), // draft, scheduled, sent, failed
+  generatedByAI: boolean("generated_by_ai").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const adminUsers = pgTable("admin_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  role: varchar("role", { length: 50 }).default("admin"), // admin, super_admin
+  permissions: text("permissions").array(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Admin panel types
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type Order = typeof orders.$inferSelect;
+
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
+  id: true,
+});
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type OrderItem = typeof orderItems.$inferSelect;
+
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+export type BlogPost = typeof blogPosts.$inferSelect;
+
+export const insertSeoSettingsSchema = createInsertSchema(seoSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+export type InsertSeoSettings = z.infer<typeof insertSeoSettingsSchema>;
+export type SeoSettings = typeof seoSettings.$inferSelect;
+
+export const insertMarketingMessageSchema = createInsertSchema(marketingMessages).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMarketingMessage = z.infer<typeof insertMarketingMessageSchema>;
+export type MarketingMessage = typeof marketingMessages.$inferSelect;
+
+export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
+export type AdminUser = typeof adminUsers.$inferSelect;
+
+// Admin panel relations
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [orders.userId],
+    references: [users.id],
+  }),
+  items: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
+}));
+
+export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
+  user: one(users, {
+    fields: [adminUsers.userId],
+    references: [users.id],
+  }),
+}));
