@@ -1,0 +1,80 @@
+Replit Agent Prompt: "OptomSavdo"
+Replit Agent's Task: Build a comprehensive, full-stack e-commerce web application named "OptomSavdo." This platform should function as an intelligent business management ecosystem, featuring a dual-pricing model, advanced user tools, a robust admin panel, an AI-powered content and marketing module, and seamless integrations with payment, shipping, and social media platforms. The application must be responsive, SEO-optimized, and deployed on Render.com.
+
+Project Details:
+
+Project Name: OptomSavdo
+
+Project Description: An advanced e-commerce platform for selling products with both wholesale and retail pricing. Its core differentiator is an integrated AI assistant within the admin panel that provides actionable suggestions for marketing, sales, and content creation by analyzing website data.
+
+Target Platform: A responsive web application that works flawlessly on desktop and mobile browsers.
+
+Core Technologies: Use Next.js for its performance and SEO-optimization. For AI functionalities, integrate both Google's Gemini 1.5 Flash API and OpenAI's API.
+
+Hosting: The project will be deployed on Render.com.
+
+Key Features:
+
+Product Display:
+
+Each product page must support a photo gallery and an option to embed a video via a Youtube link.
+
+An AI-powered recommendation engine should suggest similar or relevant products to users based on what they are currently viewing.
+
+Homepage Layout:
+
+An attractive banner section for promotions and special offers.
+
+Sections for "Most Popular Products" and "New Arrivals."
+
+A clear list of product categories for easy navigation.
+
+A dedicated section for customer testimonials to build trust.
+
+Dual Pricing System:
+
+A dynamic model where wholesale prices are applied for bulk purchases and a standard retail price for smaller quantities.
+
+AI-Powered Admin Assistant:
+
+The AI assistant, powered by Gemini 1.5 Flash and OpenAI, will analyze real-time data to provide data-driven recommendations.
+
+It should give concrete, step-by-step suggestions, for example: "To create an Instagram post for [product name] for tomorrow's promotion, follow these steps: [list of steps]."
+
+AI-Powered Blog & Multi-Platform Publishing:
+
+The blog will focus on topics related to business, manufacturing, marketing, and sales.
+
+The AI will automatically generate and publish blog posts, fully optimized for SEO.
+
+An automated system will publish an average of 5 blog posts and 2 marketing messages per day to a designated Telegram channel.
+
+Comprehensive Admin Panel:
+
+Full CRUD (Create, Read, Update, Delete) functionality for products, categories, and inventory.
+
+Tools for managing orders, user accounts, and analyzing sales and traffic.
+
+An SEO Settings section to easily insert pixels (e.g., Google Analytics, Meta Pixel) and custom code into the website's <head>.
+
+User-Facing Features:
+
+AI-Powered Recommendations: Personalize product suggestions for customers based on their Browse and purchase history.
+
+User Reviews & Ratings: Allow customers to leave feedback on product pages.
+
+Live Chatbot: An integrated chatbot for instant customer support.
+
+Integrations & Automation:
+
+Payment Gateways: Integrate with local and international payment systems (Uzcard, Humo, Payme, Click, VISA, Mastercard).
+
+Shipping Services: Integrate with partners like "Fargo" to automatically calculate shipping costs and provide order tracking.
+
+Automated Marketing: An AI-powered system will send personalized email or SMS marketing messages to customers based on their behavior.
+
+Language Preferences:
+
+Application Interface Language: The website must support Uzbek, Russian, and English.
+
+Replit Agent Interaction Language: All communication with the Replit Agent should be in Uzbek.

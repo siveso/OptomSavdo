@@ -488,6 +488,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chat AI route
+  app.post('/api/chat/ai', async (req, res) => {
+    try {
+      const { message, language = 'uz' } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ message: 'Message is required' });
+      }
+
+      // Simple response system - in production, integrate with AI
+      const responses = {
+        uz: {
+          'mahsulot narxlari': 'Bizning mahsulotlar eng arzon narxlarda. Optom buyurtmalar uchun maxsus chegirmalar mavjud.',
+          'yetkazib berish': 'Butun Oʻzbekiston boʻylab 1-3 ish kunida yetkazib beramiz. Toshkentda bir kunda yetkazish.',
+          'toʻlov usullari': 'Click, Payme, Uzcard, Humo va naqd pul orqali toʻlash mumkin.',
+          'optom sotish': 'Optom mijozlar uchun 10% dan 30% gacha chegirmalar. Minimal buyurtma 10 dona.',
+          'default': 'Rahmat! Sizning savolingiz qabul qilindi. Tez orada operatorimiz javob beradi.'
+        },
+        ru: {
+          'цены на товары': 'Наши товары по самым низким ценам. Специальные скидки для оптовых заказов.',
+          'доставка': 'Доставляем по всему Узбекистану за 1-3 рабочих дня. В Ташкенте доставка в день заказа.',
+          'способы оплаты': 'Принимаем Click, Payme, Uzcard, Humo и наличные.',
+          'оптовые продажи': 'Для оптовых покупателей скидки от 10% до 30%. Минимальный заказ 10 штук.',
+          'default': 'Спасибо! Ваш вопрос принят. Наш оператор скоро ответит.'
+        },
+        en: {
+          'product prices': 'Our products at the lowest prices. Special discounts for wholesale orders.',
+          'delivery': 'We deliver throughout Uzbekistan in 1-3 business days. Same-day delivery in Tashkent.',
+          'payment methods': 'We accept Click, Payme, Uzcard, Humo and cash payments.',
+          'wholesale': 'Discounts from 10% to 30% for wholesale customers. Minimum order 10 pieces.',
+          'default': 'Thank you! Your question has been received. Our operator will respond soon.'
+        }
+      };
+
+      const langResponses = responses[language as keyof typeof responses] || responses.uz;
+      const lowerMessage = message.toLowerCase();
+      
+      let response = langResponses.default;
+      for (const [key, value] of Object.entries(langResponses)) {
+        if (lowerMessage.includes(key)) {
+          response = value;
+          break;
+        }
+      }
+
+      res.json({ response });
+    } catch (error) {
+      console.error('Error in chat AI:', error);
+      res.status(500).json({ message: 'Failed to process chat message' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
