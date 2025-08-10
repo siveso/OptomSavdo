@@ -27,12 +27,12 @@ export default function Products() {
   const isNew = urlParams.get('isNew') === 'true';
   const featured = urlParams.get('featured') === 'true';
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
     retry: false,
   });
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products", {
       search: searchQuery || initialSearch,
       categoryId: selectedCategory || initialCategory,
@@ -116,12 +116,12 @@ export default function Products() {
             </form>
 
             {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? "" : value)}>
               <SelectTrigger>
                 <SelectValue placeholder={t("categories", language)} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">
+                <SelectItem value="all">
                   {language === "uz" ? "Barcha kategoriyalar" : 
                    language === "ru" ? "Все категории" : "All Categories"}
                 </SelectItem>

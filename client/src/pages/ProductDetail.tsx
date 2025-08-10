@@ -24,12 +24,12 @@ export default function ProductDetail() {
   const [isWholesale, setIsWholesale] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["/api/products", params.id],
     retry: false,
   });
 
-  const { data: reviews = [] } = useQuery({
+  const { data: reviews = [] } = useQuery<Review[]>({
     queryKey: ["/api/products", params.id, "reviews"],
     retry: false,
   });
